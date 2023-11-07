@@ -10,6 +10,8 @@ from config import Config
 from datasets import load_dataset
 from os import path
 config = Config()
+import spacy
+nlp = spacy.load('en_core_web_sm')
 
 
 class DatasetBase(data.Dataset):
@@ -367,6 +369,78 @@ class ReportSumBase(DatasetBase):
     def read_report_summarization(self):
 
         print(("Reading gov report as turns from {}".format(self.file_name)))
+
+        features = []
+
+        with open(self.file_name) as f:
+            for line in tqdm(f.readlines()):
+
+                session = json.loads(line.strip())
+
+                if config.early_preprocess:
+                    feature = self.preprocess(session)
+                    if feature is not None:
+                        features.append(feature)
+                else:
+                    features.append(session)
+
+        return features
+    
+class BillSumBase(DatasetBase):
+    """The base dataset for BillSum summarization."""
+
+    def __init__(self, mode, retriever_tokenizer, generator_tokenizer):
+        super(BillSumBase, self).__init__(mode, retriever_tokenizer, generator_tokenizer)
+        self.file_name = 'file_name_not_specified'
+
+    def get_references(self):
+        with open(self.file_name) as f:
+            references = []
+            for line in tqdm(f.readlines()):
+                # Process raw text.
+                session = json.loads(line.strip())
+
+                document = session["clean_text"]
+                summary = session["clean_summary"]
+                doc = nlp(document)
+                report = [sent.text for sent in doc.sents]
+
+
+                if len(report) < 10:
+                    continue
+
+                references.append(summary)
+        return references
+
+    def preprocess(self, session):
+
+        # Already tokenized
+        document = session["clean_text"]
+        summary = session["clean_summary"]
+        doc = nlp(document)
+        report = [sent.text for sent in doc.sents]
+
+        if len(report) < 10:
+            return None
+        if config.use_query:
+            query = tokenize(session["query"])
+        else:
+            query = ""
+
+        if config.use_oracle:
+            oracle = session["oracle"]
+            oracle = [int(x.strip()) for x in oracle[1:-1].split(",")]
+        else:
+            oracle = [0]
+
+        retriever_inputs = self.tokenize_retriever(text=report, query=query, oracle=oracle)
+        generator_inputs = self.tokenize_generator(text=report, query=query, summary=summary)
+
+        return retriever_inputs, generator_inputs
+
+    def read_report_summarization(self):
+
+        print(("Reading billsum as turns from {}".format(self.file_name)))
 
         features = []
 

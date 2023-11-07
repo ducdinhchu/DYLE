@@ -5,6 +5,7 @@ import nltk
 from dataloaders.qmsum import QMSum
 from dataloaders.arxiv import Arxiv
 from dataloaders.govreport import GovReport
+from dataloaders.billsum import BillSum
 
 import random
 from tqdm import tqdm
@@ -74,6 +75,12 @@ class Experiment(object):
                 self.train_set = GovReport('train', retriever_tokenizer=self.retriever_tokenizer, generator_tokenizer=self.generator_tokenizer)
             self.val_set = GovReport('valid', retriever_tokenizer=self.retriever_tokenizer, generator_tokenizer=self.generator_tokenizer)
             self.test_set = GovReport('test', retriever_tokenizer=self.retriever_tokenizer, generator_tokenizer=self.generator_tokenizer)      
+        elif config.target_task in ["billsum-latent",
+                                    ]:
+            if load_train:
+                self.train_set = BillSum('train', retriever_tokenizer=self.retriever_tokenizer, generator_tokenizer=self.generator_tokenizer)
+            self.val_set = BillSum('valid', retriever_tokenizer=self.retriever_tokenizer, generator_tokenizer=self.generator_tokenizer)
+            self.test_set = BillSum('test', retriever_tokenizer=self.retriever_tokenizer, generator_tokenizer=self.generator_tokenizer)  
         else:
             raise ValueError()
 
@@ -237,6 +244,7 @@ class Experiment(object):
             if config.target_task in ['qmsum-latent',
                                       'arxiv-latent',
                                       'govreport-latent',
+                                      'billsum-latent'
                                       ]:
                 # Process data.
                 data = self.cuda_data(*data)

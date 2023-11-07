@@ -10,7 +10,8 @@ class Config(object):
         self.target_task = ['qmsum-latent',  # 0: qmsum-latent
                             'arxiv-latent',  # 1: arxiv-latent
                             'govreport-latent',  # 2: govreport-latent
-                            ][2]  
+                            'billsum-latent', # 3: billsum-latent
+                            ][3]  
 
         self.retriever = ['roberta',
                           ][0] 
@@ -48,6 +49,7 @@ class Config(object):
         self.ROUND = 4
         self.seed = [0, 1, 2, 3, 4][0] 
         self.gpu = torch.cuda.is_available()
+        # self.gpu = False
 
         # Method-related.
         if self.retriever == 'roberta':
@@ -130,6 +132,30 @@ class Config(object):
 
             self.save_steps = 500 
             self.retriever_save_steps = 1000
+        elif self.target_task in ['billsum-latent',
+                                  ]:
+            self.use_oracle = False
+            self.use_query = False
+
+            self.oracle_type = ['greedy',][0] 
+            self.oracle_train = [False, True][1]
+            if self.oracle_train:
+                self.hybrid_train = [False, True][1] 
+            self.oracle_test = [False, True][0]
+            self.loss_alpha = [0, 0.1, 0.5, 1, 5][2]
+            self.window_size = 0 
+            self.top_k = 25
+            self.min_length = 500
+            self.no_repeat_ngram_size = 5 
+            self.max_source_len = 16
+            self.max_target_len = 32
+
+            self.consistency_alpha = [0, 0.1, 1, 2, 3, 5, 10][2] 
+            self.detach_generator_consistency = [False, True][1]
+            self.length_penalty = 2.0 
+
+            self.save_steps = 500 
+            self.retriever_save_steps = 1000
         else:
             raise ValueError()
 
@@ -146,6 +172,7 @@ class Config(object):
             'qmsum-latent': 'QMSum-DYLE',
             'arxiv-latent': 'ArXiv-DYLE',
             'govreport-latent': 'GovReport-DYLE',
+            'billsum-latent': 'BillSum-DYLE'
         }[self.target_task]
 
         ret = os.path.join(root, directory)
